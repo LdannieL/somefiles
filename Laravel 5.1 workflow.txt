@@ -1,0 +1,373 @@
+composer create-project laravel/laravel projectname --prefer-dist
+
+composer.json
+"illuminate/html": "5.*",
+"laracasts/generators": "dev-master",
+"laralib/l5scaffold":"dev-master",
+"fzaninotto/faker": "1.5.*",
+
+"anam/phpcart": "dev-master",
+"intervention/image": "dev-master",
+
+"dingo/api": "0.8.*"
+
+(4.2 "way/generators": "~2.0",
+'Way\Generators\GeneratorsServiceProvider',)
+
+composer update
+
+app.php
+Illuminate\Html\HtmlServiceProvider::class,
+Laracasts\Generators\GeneratorsServiceProvider::class,
+Laralib\L5scaffold\GeneratorsServiceProvider::class,
+
+'Anam\Phpcart\CartServiceProvider',
+'Intervention\Image\ImageServiceProvider',
+
+'Dingo\Api\Provider\ApiServiceProvider',
+
+
+'Form'		=> Illuminate\Html\FormFacade::class,
+'HTML'		=> Illuminate\Html\HtmlFacade::class,
+
+'Cart' 	=> 'Anam\Phpcart\Facades\Cart',
+'Image'		=> 'Intervention\Image\Facades\Image',
+
+'API'             => 'Dingo\Api\Facade\API'
+
+mysql -u root -p
+Enter password:
+create database projectname;
+exit;
+
+php artisan make:scaffold post --schema="title:string, body:text, category_id:integer:unsigned, user_id:integer:unsigned"
+
+routes.php
+Route::group(array('prefix' => 'admin', 'middleware' => 'auth'), function(){
+	Route::resource("posts","AdminPostController", , ['except' => ['show']]);
+});
+Route::controllers([
+	'auth' => 'Auth\AuthController',
+	'password' => 'Auth\PasswordController',
+]);
+
+Route::get('/', array('as' => 'home', 'uses' => 'PostsController@index'));
+Route::get('post/{id}', array('as' => 'post', 'uses' => 'PostsController@show'))->where('id', '[1-9][0-9]*');
+
+- config database.php and .env 
+
+composer.json
+	"autoload": {
+		"classmap": [
+			"database",
+			"app/models"
+		],
+
+ModelFactory.php
+$factory->define(App\User::class, function($faker){
+	return [
+                'email' => $faker->email(),
+                'name' => $faker->name(),
+                'password' => Hash::make('dannie123')
+	];
+});
+
+$factory->define(App\Category::class, function($faker){
+	return [
+		'name' => $faker->word
+	];
+});
+
+$factory->define(App\Post::class, function($faker){
+	return [
+		'title' => $faker->sentence(),
+		'body' => $faker->realText(1000),
+		'user_id' => rand(1,5),
+		'category_id' => rand(1,4)
+	];
+});
+
+DataSeeder.php
+Model::unguard();
+
+factory(App\User::class, 5)->create();
+factory(App\Category::class, 4)->create();
+factory(App\Post::class, 10)->create();
+
+Model::reguard();
+___________________________________________________________________________________-
+Za 5.0
+<?php
+
+use Illuminate\Database\Seeder;
+use Illuminate\Database\Eloquent\Model;
+
+// composer require laracasts/testdummy
+use Laracasts\TestDummy\Factory as TestDummy;
+
+use Faker\Factory as Faker;
+
+class PostTableSeeder extends Seeder {
+
+    public function run()
+    {
+    	$faker = Faker::create();
+    	
+		foreach(range(1, 10) as $index)
+		{
+			App\models\Post::create([
+				'title' => $faker->sentence(),
+				'body' => $faker->realText(1000),
+				'user_id' => rand(1,5)
+
+			]);
+		}
+    }
+
+}
+
+<?php
+
+use Illuminate\Database\Seeder;
+use Illuminate\Database\Eloquent\Model;
+
+// composer require laracasts/testdummy
+use Laracasts\TestDummy\Factory as TestDummy;
+
+use Faker\Factory as Faker;
+
+
+class UsersTableSeeder extends Seeder
+{
+    public function run()
+    {
+		$faker = Faker::create();
+
+		foreach(range(1, 5) as $index)
+		{
+			App\models\User::create([
+                'email' => $faker->email(),
+                'name' => $faker->name(),
+                'password' => Hash::make('dannie123')
+			]);
+		}
+    }
+}
+
+
+<?php
+
+use Illuminate\Database\Seeder;
+use Illuminate\Database\Eloquent\Model;
+
+class DatabaseSeeder extends Seeder {
+
+	/**
+	 * Run the database seeds.
+	 *
+	 * @return void
+	 */
+	public function run()
+	{
+		Model::unguard();
+
+		$this->call('PostTableSeeder');
+		$this->call('UsersTableSeeder');
+	}
+
+}
+
+_____________________________________________________________________________________
+
+php artisan migrate
+php artisan db:seed
+
+Model Post.php
+	public static $rules = [
+		'title' => 'required|between:3,255',
+		'body' => 'required',
+		'user_id' => 'integer',
+		'category_id' => 'integer',
+	];
+
+	
+	protected $fillable = ['title', 'body', 'user_id', 'category_id'];
+
+	public function user(){
+        return $this->belongsTo('App\models\User');
+    }
+
+Model User.php
+public function posts(){
+        return $this->hasMany('App\models\Post');
+}
+
+ne treba za 5.1, ali mozda zatereba neka druga migracija:
+php artisan make:migration:schema create_users_table --schema="email:string,:unique, password:string(128), name:string, remember_tolken:string(100):nullable"
+php artisan make:seed users
+
+php artisan make:migration:schema create_products_table --schema="category_id:integer:foreign, title:string, description:text, price:decimal(6,2), availability:boolean:default(1), image:string"
+
+php artisan make:migration:schema create_users_table --schema="firstname:string, lastname:string, email:str
+ing:unique, password:string(128), telephone:string, admin:boolean:default(0)" --model=false
+
+php artisan route:list
+composer dump-autoload
+
+add in controller use \View, \Input, \Validator, \Request, \Redirect, \Image, \File;
+so you can write return View::make('admin.posts.index', compact('posts'));
+or just write:
+<?php namespace App\Http\Controllers;
+
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+
+use App\models\Post;
+use Illuminate\Http\Request;
+
+class AdminPostController extends Controller {
+	public function index()
+	{
+		$posts = Post::all();
+
+		return view('admin.posts.index', compact('posts'));
+	}
+
+PostController.php
+<?php namespace App\Http\Controllers;
+
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+
+use App\models\Post;
+use Illuminate\Http\Request;
+
+class PostsController extends Controller {
+
+	/**
+	 * Display a listing of the resource.
+	 *
+	 * @return Response
+	 */
+	public function index()
+	{
+        $posts =  Post::with('user')->get();
+	$posts = Post::paginate(10); <-- to add pagination
+        return view('posts.index', compact('posts'));
+	}
+
+	public function show($id)
+	{
+        $post = Post::with('user')->find($id);
+        return view('posts.post', compact('post'));
+	}
+}
+
+frontend
+_layouts folder
+default.blade.php
+html:5>
+{!! HTML::style('css/admin.css') !!} <-- umesto }}
+body>header>div.container>h1 hit Tab
+main.container>
+@yield('content)
+
+footer>div.container
+&copy; {{ date('Y') }} My Awesome Company | {{ link_to_route('admin', 'Admin') }}
+
+@extends('_layouts.default')
+@section
+
+article>h2>
+@if($posts->count())
+@foreach($posts as $post)
+<article>
+    <h2>{!! link_to_route('post', $post->title, array($post->id)) !!}</h2>
+    <p class="created_at">Created on {{{ date('Y-m-d', strtotime($post->created_at))}}} By {{{ $post->user->name }}}
+    {!! str_limit($post->body) !!}
+
+    <p>{!! link_to_route('post', 'Read More &rsaquo;', array($post->id)) !!}</p>
+</article>
+@endforeach
+@endif
+{!! $posts->render() !!}
+@endsection
+
+php artisan make:controller admin/AdminAuthController
+
+view/posts/index.blade.php
+l:v>
+
+post.blade.php
+@extends('layouts.default')
+
+@section('content')
+<h1>{{{ $post->title }}}</h1>
+<p class="created_at">Created on {{{ date('Y-m-d', strtotime($post->created_at))}}} By {{{ $post->user->name }}}</p>
+<p>{!! $post->body !!}</p>
+<p>{!! link_to_route('home', '&lsaquo; Back') !!}</p>
+
+@stop
+
+5.1 doesnt have login view
+@extends('posts.layout')
+
+@section('content')
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-md-8 col-md-offset-2">
+			<div class="panel panel-default">
+				<div class="panel-heading">Login</div>
+				<div class="panel-body">
+					@if (count($errors) > 0)
+						<div class="alert alert-danger">
+							<strong>Whoops!</strong> There were some problems with your input.<br><br>
+							<ul>
+								@foreach ($errors->all() as $error)
+									<li>{{ $error }}</li>
+								@endforeach
+							</ul>
+						</div>
+					@endif
+
+					<form class="form-horizontal" role="form" method="POST" action="{{ url('/auth/login') }}">
+						<input type="hidden" name="_token" value="{{ csrf_token() }}">
+
+						<div class="form-group">
+							<label class="col-md-4 control-label">E-Mail Address</label>
+							<div class="col-md-6">
+								<input type="email" class="form-control" name="email" value="{{ old('email') }}">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="col-md-4 control-label">Password</label>
+							<div class="col-md-6">
+								<input type="password" class="form-control" name="password">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<div class="col-md-6 col-md-offset-4">
+								<div class="checkbox">
+									<label>
+										<input type="checkbox" name="remember"> Remember Me
+									</label>
+								</div>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<div class="col-md-6 col-md-offset-4">
+								<button type="submit" class="btn btn-primary">Login</button>
+
+								<a class="btn btn-link" href="{{ url('/password/email') }}">Forgot Your Password?</a>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+@endsection
